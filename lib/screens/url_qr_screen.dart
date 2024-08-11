@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
-import '../screens/widgets/curve_clippers.dart';
+import '../widgets/custom_snackbar.dart';
 import '../widgets/qr_display.dart';
+import '../screens/widgets/curve_clippers.dart';
 
 class UrlQrScreen extends StatefulWidget {
   const UrlQrScreen({super.key});
@@ -13,13 +13,28 @@ class UrlQrScreen extends StatefulWidget {
 class UrlQrScreenState extends State<UrlQrScreen> {
   final _urlController = TextEditingController();
   String? _qrData;
-  String? _errorMessage;
 
   bool _isValidUrl(String url) {
     final urlPattern = RegExp(
       r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$',
     );
     return urlPattern.hasMatch(url);
+  }
+  void _showErrorSnackBar(String message) {
+    CustomSnackBar.show(context, message);
+  }
+
+  void _generateQrCode() {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      _showErrorSnackBar('Please enter a URL');
+    } else if (!_isValidUrl(url)) {
+      _showErrorSnackBar('Please enter a valid URL');
+    } else {
+      setState(() {
+        _qrData = url;
+      });
+    }
   }
 
   @override
@@ -107,20 +122,7 @@ class UrlQrScreenState extends State<UrlQrScreen> {
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () {
-                        final url = _urlController.text;
-                        if (_isValidUrl(url)) {
-                          setState(() {
-                            _qrData = url;
-                            _errorMessage = null;
-                          });
-                        } else {
-                          setState(() {
-                            _qrData = null;
-                            _errorMessage = 'Please enter a valid URL';
-                          });
-                        }
-                      },
+                      onPressed: _generateQrCode,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2A2D3E),
                         foregroundColor: Colors.white,
@@ -136,11 +138,6 @@ class UrlQrScreenState extends State<UrlQrScreen> {
                           style: TextStyle(fontSize: 16)),
                     ),
                     const SizedBox(height: 20),
-                    if (_errorMessage != null)
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
                     if (_qrData != null) QrDisplay(data: _qrData!),
                   ],
                 ),

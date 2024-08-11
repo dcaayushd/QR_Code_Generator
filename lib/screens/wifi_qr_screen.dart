@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
-import '../screens/widgets/curve_clippers.dart';
 import '../utils/qr_generator.dart';
+import '../widgets/custom_snackbar.dart';
 import '../widgets/qr_display.dart';
+import '../screens/widgets/curve_clippers.dart';
 
 class WifiQrScreen extends StatefulWidget {
   const WifiQrScreen({super.key});
@@ -15,11 +15,29 @@ class WifiQrScreenState extends State<WifiQrScreen> {
   final _ssidController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _qrData;
-  String? _errorMessage;
 
-  bool _isValidWifi() {
-    return _ssidController.text.isNotEmpty &&
-        _passwordController.text.isNotEmpty;
+  void _showErrorSnackBar(String message) {
+    CustomSnackBar.show(context, message);
+  }
+
+  void _generateQrCode() {
+    final ssid = _ssidController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (ssid.isEmpty && password.isEmpty) {
+      _showErrorSnackBar('Please enter both SSID and password');
+    } else if (ssid.isEmpty) {
+      _showErrorSnackBar('Please enter the SSID');
+    } else if (password.isEmpty) {
+      _showErrorSnackBar('Please enter the password');
+    } else {
+      setState(() {
+        _qrData = QrGenerator.getWifiString(
+          ssid: ssid,
+          password: password,
+        );
+      });
+    }
   }
 
   @override
@@ -105,7 +123,7 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 10),
                     Container(
                       width: MediaQuery.of(context).size.width * 0.8,
                       decoration: BoxDecoration(
@@ -142,23 +160,7 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () {
-                        if (_isValidWifi()) {
-                          setState(() {
-                            _qrData = QrGenerator.getWifiString(
-                              ssid: _ssidController.text,
-                              password: _passwordController.text,
-                            );
-                            _errorMessage = null;
-                          });
-                        } else {
-                          setState(() {
-                            _qrData = null;
-                            _errorMessage =
-                                'Please enter both SSID and password';
-                          });
-                        }
-                      },
+                      onPressed: _generateQrCode,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2A2D3E),
                         foregroundColor: Colors.white,
@@ -174,11 +176,6 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                           style: TextStyle(fontSize: 16)),
                     ),
                     const SizedBox(height: 20),
-                    if (_errorMessage != null)
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
                     if (_qrData != null) QrDisplay(data: _qrData!),
                   ],
                 ),
