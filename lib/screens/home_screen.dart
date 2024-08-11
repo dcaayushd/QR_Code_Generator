@@ -4,7 +4,9 @@ import 'wifi_qr_screen.dart';
 import 'widgets/curve_clippers.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final Function(int) onBottomNavIndexChanged;
+
+  const HomeScreen({super.key, required this.onBottomNavIndexChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +24,14 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.camera_alt, color: Colors.white),
+            onPressed: () {
+              onBottomNavIndexChanged(1);
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
