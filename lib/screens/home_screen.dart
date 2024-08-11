@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
-import '../screens/url_qr_screen.dart';
-import '../screens/widgets/curve_clippers.dart';
-import '../screens/wifi_qr_screen.dart';
+import 'url_qr_screen.dart';
+import 'wifi_qr_screen.dart';
+import 'widgets/curve_clippers.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -23,16 +22,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: Icon(
-              Icons.camera_alt,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -68,35 +57,39 @@ class HomeScreen extends StatelessWidget {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildButton(
-                    context,
-                    icon: Icons.link,
-                    text: 'Generate Link QR Code',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const UrlQrScreen(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildButton(
-                    context,
-                    icon: Icons.wifi,
-                    text: 'Generate WIFI QR Code',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const WifiQrScreen(),
-                      ),
-                    ),
-                  ),
-                ],
+            child: _buildHomeContent(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeContent(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildButton(
+            context,
+            icon: Icons.link,
+            text: 'Generate Link QR Code',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const UrlQrScreen(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildButton(
+            context,
+            icon: Icons.wifi,
+            text: 'Generate WIFI QR Code',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const WifiQrScreen(),
               ),
             ),
           ),
@@ -131,70 +124,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
-// class TopCurveClipper extends CustomClipper<Path> {
-//   @override
-//   Path getClip(Size size) {
-//     final path = Path();
-//     path.lineTo(0, size.height * 0.375);
-
-//     final firstControlPoint = Offset(size.width * 0.25, size.height * 0.585);
-//     final firstEndPoint = Offset(size.width * 0.5, size.height * 0.475);
-//     path.quadraticBezierTo(
-//       firstControlPoint.dx,
-//       firstControlPoint.dy,
-//       firstEndPoint.dx,
-//       firstEndPoint.dy,
-//     );
-
-//     final secondControlPoint = Offset(size.width * 0.75, size.height * 0.365);
-//     final secondEndPoint = Offset(size.width, size.height * 0.575);
-//     path.quadraticBezierTo(
-//       secondControlPoint.dx,
-//       secondControlPoint.dy,
-//       secondEndPoint.dx,
-//       secondEndPoint.dy,
-//     );
-
-//     path.lineTo(size.width, 0);
-//     path.close();
-//     return path;
-//   }
-
-//   @override
-//   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-// }
-
-// class BottomCurveClipper extends CustomClipper<Path> {
-//   @override
-//   Path getClip(Size size) {
-//     final path = Path();
-//     path.moveTo(0, size.height * 0.225);
-
-//     final firstControlPoint = Offset(size.width * 0.25, size.height * 0.1);
-//     final firstEndPoint = Offset(size.width * 0.5, size.height * 0.25);
-//     path.quadraticBezierTo(
-//       firstControlPoint.dx,
-//       firstControlPoint.dy,
-//       firstEndPoint.dx,
-//       firstEndPoint.dy,
-//     );
-
-//     final secondControlPoint = Offset(size.width * 0.75, size.height * 0.135);
-//     final secondEndPoint = Offset(size.width, size.height * 0.125);
-//     path.quadraticBezierTo(
-//       secondControlPoint.dx,
-//       secondControlPoint.dy,
-//       secondEndPoint.dx,
-//       secondEndPoint.dy,
-//     );
-
-//     path.lineTo(size.width, size.height);
-//     path.lineTo(0, size.height);
-//     path.close();
-//     return path;
-//   }
-
-//   @override
-//   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-// }
