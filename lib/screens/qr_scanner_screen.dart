@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'
@@ -185,95 +186,75 @@ class QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   void _handleUrlQrCode(String url) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('URL QR Code Detected'),
-          content: Text('Would you like to open this URL?\n\n$url'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Open'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _showBrowserList(url);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showBrowserList(String url) async {
-    final browsers = await _getInstalledBrowsers();
-
-    if (browsers.isEmpty) {
-      _showErrorSnackBar('No browsers found on the device.');
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Select a browser'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: browsers.map((browser) {
-                return ListTile(
-                  title: Text(browser.appName),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _launchUrlInBrowser(url, browser.packageName);
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<List<BrowserInfo>> _getInstalledBrowsers() async {
-    final browsers = [
-      BrowserInfo('Google Chrome', 'com.android.chrome'),
-      BrowserInfo('Mozilla Firefox', 'org.mozilla.firefox'),
-      BrowserInfo('Microsoft Edge', 'com.microsoft.emmx'),
-      BrowserInfo('Opera', 'com.opera.browser'),
-      BrowserInfo('UC Browser', 'com.UCMobile.intl'),
-      BrowserInfo('Samsung Internet', 'com.sec.android.app.sbrowser'),
-    ];
-
-    final installedBrowsers = <BrowserInfo>[];
-
-    for (var browser in browsers) {
-      if (await canLaunchUrl(Uri.parse('${browser.packageName}://'))) {
-        installedBrowsers.add(browser);
-      }
-    }
-
-    return installedBrowsers;
-  }
-
-  void _launchUrlInBrowser(String url, String browserPackageName) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-        webViewConfiguration: WebViewConfiguration(
-          headers: {'browser_package': browserPackageName},
-        ),
+    if (Platform.isIOS) {
+      showCupertinoDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return CupertinoAlertDialog(
+            title: const Text('URL QR Code Detected'),
+            content: Text('Would you like to open this URL?\n\n$url'),
+            actions: <Widget>[
+              CupertinoDialogAction(
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Colors.red,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              CupertinoDialogAction(
+                child: const Text('Open'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _launchUrl(url);
+                },
+              ),
+            ],
+          );
+        },
       );
     } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('URL QR Code Detected'),
+            content: Text('Would you like to open this URL?\n\n$url'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Colors.red,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: const Text('Open'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _launchUrl(url);
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    )) {
       _showErrorSnackBar('Could not launch $url');
     }
   }
@@ -287,31 +268,69 @@ class QrScannerScreenState extends State<QrScannerScreen> {
       final type = match.group(2);
       final password = match.group(3);
 
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('WiFi QR Code Detected'),
-            content: Text(
-                'Would you like to connect to this WiFi network?\n\nSSID: $ssid\nType: $type'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('Cancel'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: const Text('Connect'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _connectToWifi(ssid!, type!, password!);
-                },
-              ),
-            ],
-          );
-        },
-      );
+      if (Platform.isIOS) {
+        showCupertinoDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return CupertinoAlertDialog(
+              title: const Text('WiFi QR Code Detected'),
+              content: Text(
+                  'Would you like to connect to this WiFi network?\n\nSSID: $ssid\nType: $type'),
+              actions: <Widget>[
+                CupertinoDialogAction(
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.red,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                CupertinoDialogAction(
+                  child: const Text('Connect'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _connectToWifi(ssid!, type!, password!);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('WiFi QR Code Detected'),
+              content: Text(
+                  'Would you like to connect to this WiFi network?\n\nSSID: $ssid\nType: $type'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.red,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Connect'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _connectToWifi(ssid!, type!, password!);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
     } else {
       _showErrorSnackBar('Invalid WiFi QR code format.');
     }
@@ -322,15 +341,18 @@ class QrScannerScreenState extends State<QrScannerScreen> {
       await WiFiForIoTPlugin.connect(ssid,
           password: password,
           security: type == 'WPA' ? NetworkSecurity.WPA : NetworkSecurity.NONE);
-      _showErrorSnackBar('Connected to $ssid');
+      _showSuccessSnackBar('Connected to $ssid');
     } catch (e) {
       _showErrorSnackBar('Failed to connect to WiFi: $e');
     }
   }
 
   void _showErrorSnackBar(String message) {
-    // CustomSnackBar.show(context, message,);
     CustomSnackBar.show(context, message, Colors.red);
+  }
+
+  void _showSuccessSnackBar(String message) {
+    CustomSnackBar.show(context, message, Colors.green);
   }
 
   void _toggleFlash() {
