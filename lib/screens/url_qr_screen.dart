@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../utils/qr_utils.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/qr_display.dart';
+import '../widgets/action_button.dart';
 import '../screens/widgets/curve_clippers.dart';
 
 class UrlQrScreen extends StatefulWidget {
@@ -13,6 +15,7 @@ class UrlQrScreen extends StatefulWidget {
 class UrlQrScreenState extends State<UrlQrScreen> {
   final _urlController = TextEditingController();
   String? _qrData;
+  final GlobalKey _qrKey = GlobalKey();
 
   bool _isValidUrl(String url) {
     final urlPattern = RegExp(
@@ -20,8 +23,9 @@ class UrlQrScreenState extends State<UrlQrScreen> {
     );
     return urlPattern.hasMatch(url);
   }
+
   void _showErrorSnackBar(String message) {
-    CustomSnackBar.show(context, message);
+    CustomSnackBar.show(context, message, Colors.red);
   }
 
   void _generateQrCode() {
@@ -138,7 +142,33 @@ class UrlQrScreenState extends State<UrlQrScreen> {
                           style: TextStyle(fontSize: 16)),
                     ),
                     const SizedBox(height: 20),
-                    if (_qrData != null) QrDisplay(data: _qrData!),
+                    if (_qrData != null) ...[
+                      RepaintBoundary(
+                        key: _qrKey,
+                        child: QrDisplay(
+                          data: _qrData!,
+                          size: const Size(300, 300),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ActionButton(
+                            icon: Icons.save_alt,
+                            label: 'Save',
+                            onPressed: () =>
+                                QrUtils.saveQrCode(context, _qrKey),
+                          ),
+                          ActionButton(
+                            icon: Icons.share,
+                            label: 'Share',
+                            onPressed: () =>
+                                QrUtils.shareQrCode(context, _qrKey),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

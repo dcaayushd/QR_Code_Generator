@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../utils/qr_generator.dart';
+import '../utils/qr_utils.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/qr_display.dart';
+import '../widgets/action_button.dart';
 import '../screens/widgets/curve_clippers.dart';
 
 class WifiQrScreen extends StatefulWidget {
@@ -15,9 +17,10 @@ class WifiQrScreenState extends State<WifiQrScreen> {
   final _ssidController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _qrData;
+  final GlobalKey _qrKey = GlobalKey();
 
   void _showErrorSnackBar(String message) {
-    CustomSnackBar.show(context, message);
+    CustomSnackBar.show(context, message, Colors.red);
   }
 
   void _generateQrCode() {
@@ -25,11 +28,11 @@ class WifiQrScreenState extends State<WifiQrScreen> {
     final password = _passwordController.text.trim();
 
     if (ssid.isEmpty && password.isEmpty) {
-      _showErrorSnackBar('Please enter both SSID and password');
+      _showErrorSnackBar('Please Enter both SSID and Password');
     } else if (ssid.isEmpty) {
-      _showErrorSnackBar('Please enter the SSID');
+      _showErrorSnackBar('Please Enter the SSID');
     } else if (password.isEmpty) {
-      _showErrorSnackBar('Please enter the password');
+      _showErrorSnackBar('Please Enter the Password');
     } else {
       setState(() {
         _qrData = QrGenerator.getWifiString(
@@ -176,7 +179,32 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                           style: TextStyle(fontSize: 16)),
                     ),
                     const SizedBox(height: 20),
-                    if (_qrData != null) QrDisplay(data: _qrData!),
+                    if (_qrData != null) ...[
+                      RepaintBoundary(
+                        key: _qrKey,
+                        child: QrDisplay(
+                          data: _qrData!,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ActionButton(
+                            icon: Icons.save_alt,
+                            label: 'Save',
+                            onPressed: () =>
+                                QrUtils.saveQrCode(context, _qrKey),
+                          ),
+                          ActionButton(
+                            icon: Icons.share,
+                            label: 'Share',
+                            onPressed: () =>
+                                QrUtils.shareQrCode(context, _qrKey),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

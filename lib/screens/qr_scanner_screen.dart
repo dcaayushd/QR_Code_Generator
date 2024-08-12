@@ -1,9 +1,14 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:flutter/material.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart'
+    as ml_kit;
 import 'package:image_picker/image_picker.dart';
-import 'package:qr_code_tools/qr_code_tools.dart';
+import 'package:mobile_scanner/mobile_scanner.dart' as mobile_scanner;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:wifi_iot/wifi_iot.dart';
+
 import '../screens/widgets/curve_clippers.dart';
 import '../widgets/custom_snackbar.dart';
 
@@ -15,8 +20,8 @@ class QrScannerScreen extends StatefulWidget {
 }
 
 class QrScannerScreenState extends State<QrScannerScreen> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  mobile_scanner.MobileScannerController cameraController =
+      mobile_scanner.MobileScannerController();
   bool _isFlashOn = false;
   final ImagePicker _imagePicker = ImagePicker();
   File? _selectedImage;
@@ -83,9 +88,15 @@ class QrScannerScreenState extends State<QrScannerScreen> {
                       borderRadius: BorderRadius.circular(10),
                       child: _selectedImage != null
                           ? Image.file(_selectedImage!, fit: BoxFit.cover)
-                          : QRView(
-                              key: qrKey,
-                              onQRViewCreated: _onQRViewCreated,
+                          : mobile_scanner.MobileScanner(
+                              controller: cameraController,
+                              onDetect: (capture) {
+                                final List<mobile_scanner.Barcode> barcodes =
+                                    capture.barcodes;
+                                for (final barcode in barcodes) {
+                                  _processQRCode(barcode.rawValue);
+                                }
+                              },
                             ),
                     ),
                   )
@@ -132,41 +143,39 @@ class QrScannerScreenState extends State<QrScannerScreen> {
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      _processQRCode(scanData.code);
-    });
-  }
-
   Future<void> _openGallery() async {
     final XFile? pickedFile =
         await _imagePicker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       File imageFile = File(pickedFile.path);
       try {
-        String? qrCode = await QrCodeToolsPlugin.decodeFrom(imageFile.path);
-        if (qrCode != null && qrCode.isNotEmpty) {
+        final inputImage = ml_kit.InputImage.fromFilePath(imageFile.path);
+        final barcodeScanner = ml_kit.BarcodeScanner();
+        final List<ml_kit.Barcode> barcodes =
+            await barcodeScanner.processImage(inputImage);
+
+        if (barcodes.isNotEmpty) {
           setState(() {
             _selectedImage = imageFile;
           });
-          _processQRCode(qrCode);
+          _processQRCode(barcodes.first.rawValue);
         } else {
           _showErrorSnackBar('No QR code found in the selected image.');
         }
+
+        await barcodeScanner.close();
       } catch (e) {
-        _showErrorSnackBar('Error processing the selected image.');
+        _showErrorSnackBar('Error processing the selected image: $e');
       }
     }
   }
 
   void _processQRCode(String? qrCode) {
     if (qrCode != null && qrCode.isNotEmpty) {
-      // Process the QR code data
       if (qrCode.startsWith('http') || qrCode.startsWith('https')) {
-        _showErrorSnackBar('Valid URL QR Code: $qrCode');
+        _handleUrlQrCode(qrCode);
       } else if (qrCode.startsWith('WIFI:')) {
-        _showErrorSnackBar('Valid WiFi QR Code: $qrCode');
+        _handleWifiQrCode(qrCode);
       } else {
         _showErrorSnackBar('QR Code scanned: $qrCode');
       }
@@ -175,22 +184,172 @@ class QrScannerScreenState extends State<QrScannerScreen> {
     }
   }
 
+  void _handleUrlQrCode(String url) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('URL QR Code Detected'),
+          content: Text('Would you like to open this URL?\n\n$url'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Open'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showBrowserList(url);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBrowserList(String url) async {
+    final browsers = await _getInstalledBrowsers();
+
+    if (browsers.isEmpty) {
+      _showErrorSnackBar('No browsers found on the device.');
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select a browser'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: browsers.map((browser) {
+                return ListTile(
+                  title: Text(browser.appName),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _launchUrlInBrowser(url, browser.packageName);
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<List<BrowserInfo>> _getInstalledBrowsers() async {
+    final browsers = [
+      BrowserInfo('Google Chrome', 'com.android.chrome'),
+      BrowserInfo('Mozilla Firefox', 'org.mozilla.firefox'),
+      BrowserInfo('Microsoft Edge', 'com.microsoft.emmx'),
+      BrowserInfo('Opera', 'com.opera.browser'),
+      BrowserInfo('UC Browser', 'com.UCMobile.intl'),
+      BrowserInfo('Samsung Internet', 'com.sec.android.app.sbrowser'),
+    ];
+
+    final installedBrowsers = <BrowserInfo>[];
+
+    for (var browser in browsers) {
+      if (await canLaunchUrl(Uri.parse('${browser.packageName}://'))) {
+        installedBrowsers.add(browser);
+      }
+    }
+
+    return installedBrowsers;
+  }
+
+  void _launchUrlInBrowser(String url, String browserPackageName) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+        webViewConfiguration: WebViewConfiguration(
+          headers: {'browser_package': browserPackageName},
+        ),
+      );
+    } else {
+      _showErrorSnackBar('Could not launch $url');
+    }
+  }
+
+  void _handleWifiQrCode(String wifiString) {
+    final regex = RegExp(r'WIFI:S:(.*?);T:(.*?);P:(.*?);');
+    final match = regex.firstMatch(wifiString);
+
+    if (match != null) {
+      final ssid = match.group(1);
+      final type = match.group(2);
+      final password = match.group(3);
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('WiFi QR Code Detected'),
+            content: Text(
+                'Would you like to connect to this WiFi network?\n\nSSID: $ssid\nType: $type'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: const Text('Connect'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _connectToWifi(ssid!, type!, password!);
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      _showErrorSnackBar('Invalid WiFi QR code format.');
+    }
+  }
+
+  void _connectToWifi(String ssid, String type, String password) async {
+    try {
+      await WiFiForIoTPlugin.connect(ssid,
+          password: password,
+          security: type == 'WPA' ? NetworkSecurity.WPA : NetworkSecurity.NONE);
+      _showErrorSnackBar('Connected to $ssid');
+    } catch (e) {
+      _showErrorSnackBar('Failed to connect to WiFi: $e');
+    }
+  }
+
   void _showErrorSnackBar(String message) {
-    CustomSnackBar.show(context, message);
+    // CustomSnackBar.show(context, message,);
+    CustomSnackBar.show(context, message, Colors.red);
   }
 
   void _toggleFlash() {
-    if (controller != null) {
-      controller!.toggleFlash();
-      setState(() {
-        _isFlashOn = !_isFlashOn;
-      });
-    }
+    cameraController.toggleTorch();
+    setState(() {
+      _isFlashOn = !_isFlashOn;
+    });
   }
 
   @override
   void dispose() {
-    controller?.dispose();
+    cameraController.dispose();
     super.dispose();
   }
+}
+
+class BrowserInfo {
+  final String appName;
+  final String packageName;
+
+  BrowserInfo(this.appName, this.packageName);
 }
