@@ -1,6 +1,6 @@
 {
-    "name": "qrcodegenerator",
-    "short_name": "qrcodegenerator",
+    "name": "Qronos",
+    "short_name": "Qronos",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
@@ -8,7 +8,11 @@
     "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
-    "icons": [
+    "icons": [{
+            "src": "/favicon.ico",
+            "type": "image/x-icon",
+            "sizes": "16x16 32x32"
+        },
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",

@@ -6,7 +6,7 @@
     <uses-feature android:name="android.hardware.camera.flash" android:required="true" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <application
-        android:label="qrcodegenerator"
+        android:label="Qronos"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
