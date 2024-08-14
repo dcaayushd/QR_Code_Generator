@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../screens/widgets/curve_clippers.dart';
+import '../screens/widgets/qr_customization_dialog.dart';
 import '../utils/qr_utils.dart';
+import '../widgets/action_button.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/qr_display.dart';
-import '../widgets/action_button.dart';
-import '../screens/widgets/curve_clippers.dart';
 
 class UrlQrScreen extends StatefulWidget {
   const UrlQrScreen({super.key});
@@ -16,6 +17,9 @@ class UrlQrScreenState extends State<UrlQrScreen> {
   final _urlController = TextEditingController();
   String? _qrData;
   final GlobalKey _qrKey = GlobalKey();
+  Color _qrColor = Colors.black;
+  String _qrStyle = 'dots';
+  IconData? _selectedIcon;
 
   bool _isValidUrl(String url) {
     final urlPattern = RegExp(
@@ -39,6 +43,22 @@ class UrlQrScreenState extends State<UrlQrScreen> {
         _qrData = url;
       });
     }
+  }
+
+  void _customizeQrCode() {
+    showQrCustomizationDialog(
+      context: context,
+      initialColor: _qrColor,
+      initialStyle: _qrStyle,
+      initialIcon: _selectedIcon,
+      onCustomize: (Color color, String style, IconData? icon) {
+        setState(() {
+          _qrColor = color;
+          _qrStyle = style;
+          _selectedIcon = icon;
+        });
+      },
+    );
   }
 
   @override
@@ -118,8 +138,9 @@ class UrlQrScreenState extends State<UrlQrScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
-                            borderSide:
-                                const BorderSide(color: Color(0xFF2A2D3E)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF2A2D3E),
+                            ),
                           ),
                         ),
                       ),
@@ -134,21 +155,59 @@ class UrlQrScreenState extends State<UrlQrScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 15),
+                          horizontal: 20,
+                          vertical: 15,
+                        ),
                         minimumSize:
                             Size(MediaQuery.of(context).size.width * 0.8, 70),
                       ),
-                      child: const Text('Generate QR Code',
-                          style: TextStyle(fontSize: 16)),
+                      child: const Text(
+                        'Generate QR Code',
+                        style: TextStyle(fontSize: 16),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     if (_qrData != null) ...[
-                      RepaintBoundary(
-                        key: _qrKey,
-                        child: QrDisplay(
-                          data: _qrData!,
-                          size: const Size(300, 300),
-                        ),
+                      Column(
+                        children: [
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: _customizeQrCode,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.black,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          RepaintBoundary(
+                            key: _qrKey,
+                            child: QrDisplay(
+                              data: _qrData!,
+                              size: const Size(300, 300),
+                              color: _qrColor,
+                              icon: _selectedIcon,
+                              style: _qrStyle,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
                       Row(

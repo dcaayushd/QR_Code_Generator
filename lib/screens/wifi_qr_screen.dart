@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_code_generator/screens/widgets/qr_customization_dialog.dart';
 import '../utils/qr_generator.dart';
 import '../utils/qr_utils.dart';
 import '../widgets/custom_snackbar.dart';
@@ -19,6 +20,28 @@ class WifiQrScreenState extends State<WifiQrScreen> {
   String? _qrData;
   final GlobalKey _qrKey = GlobalKey();
 
+  Color _qrColor = Colors.purple; 
+  String _qrStyle = 'dots'; 
+  IconData? _selectedIcon;
+
+
+
+  void _customizeQrCode() {
+    showQrCustomizationDialog(
+      context: context,
+      initialColor: _qrColor,
+      initialStyle: _qrStyle,
+      initialIcon: _selectedIcon,
+      onCustomize: (Color color, String style, IconData? icon) {
+        setState(() {
+          _qrColor = color;
+          _qrStyle = style;
+          _selectedIcon = icon;
+        });
+      },
+    );
+  }
+
   void _showErrorSnackBar(String message) {
     CustomSnackBar.show(context, message, Colors.red);
   }
@@ -33,6 +56,8 @@ class WifiQrScreenState extends State<WifiQrScreen> {
       _showErrorSnackBar('Please Enter the SSID');
     } else if (password.isEmpty) {
       _showErrorSnackBar('Please Enter the Password');
+    } else if (password.length < 8) {
+      _showErrorSnackBar('Password must be at least 8 characters long');
     } else {
       setState(() {
         _qrData = QrGenerator.getWifiString(
@@ -179,12 +204,46 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                           style: TextStyle(fontSize: 16)),
                     ),
                     const SizedBox(height: 20),
+            
                     if (_qrData != null) ...[
-                      RepaintBoundary(
-                        key: _qrKey,
-                        child: QrDisplay(
-                          data: _qrData!,
-                        ),
+                      Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          RepaintBoundary(
+                            key: _qrKey,
+                            child: QrDisplay(
+                              data: _qrData!,
+                              size: const Size(300, 300),
+                              color: _qrColor,
+                              icon: _selectedIcon,
+                              style: _qrStyle,
+                            ),
+                          ),
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: GestureDetector(
+                              onTap: _customizeQrCode,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(Icons.edit,
+                                    color: Colors.black, size: 20),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
                       Row(
