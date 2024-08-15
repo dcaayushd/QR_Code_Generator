@@ -18,8 +18,9 @@ class UrlQrScreenState extends State<UrlQrScreen> {
   String? _qrData;
   final GlobalKey _qrKey = GlobalKey();
   Color _qrColor = Colors.black;
-  String _qrStyle = 'dots';
-  IconData? _selectedIcon;
+  String _qrStyle = 'classic';
+  // IconData? _selectedIcon;
+  String? _selectedEmoji;
 
   bool _isValidUrl(String url) {
     final urlPattern = RegExp(
@@ -46,19 +47,29 @@ class UrlQrScreenState extends State<UrlQrScreen> {
   }
 
   void _customizeQrCode() {
+    Color tempColor = _qrColor;
+    String tempStyle = _qrStyle;
+    String? tempEmoji = _selectedEmoji;
+
     showQrCustomizationDialog(
       context: context,
       initialColor: _qrColor,
       initialStyle: _qrStyle,
-      initialIcon: _selectedIcon,
-      onCustomize: (Color color, String style, IconData? icon) {
-        setState(() {
-          _qrColor = color;
-          _qrStyle = style;
-          _selectedIcon = icon;
-        });
+      initialEmoji: _selectedEmoji,
+      onCustomize: (Color color, String style, String? emoji) {
+        tempColor = color;
+        tempStyle = style;
+        tempEmoji = emoji;
       },
-    );
+    ).then((value) {
+      if (value == true) {
+        setState(() {
+          _qrColor = tempColor;
+          _qrStyle = tempStyle;
+          _selectedEmoji = tempEmoji;
+        });
+      }
+    });
   }
 
   @override
@@ -203,7 +214,8 @@ class UrlQrScreenState extends State<UrlQrScreen> {
                               data: _qrData!,
                               size: const Size(300, 300),
                               color: _qrColor,
-                              icon: _selectedIcon,
+                              // icon: _selectedIcon,
+                              emoji: _selectedEmoji,
                               style: _qrStyle,
                             ),
                           ),

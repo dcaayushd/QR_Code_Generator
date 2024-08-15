@@ -1,13 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 
-void showQrCustomizationDialog({
+Future<bool?> showQrCustomizationDialog({
   required BuildContext context,
   required Color initialColor,
   required String initialStyle,
-  required IconData? initialIcon,
-  required Function(Color color, String style, IconData? icon) onCustomize,
+  required String? initialEmoji,
+  required Function(Color color, String style, String? emoji) onCustomize,
 }) {
+  Color selectedColor = initialColor;
+  String selectedStyle = initialStyle;
+  String? selectedEmoji = initialEmoji;
+
   final List<Color> availableColors = [
     Colors.black,
     Colors.purple,
@@ -21,136 +28,154 @@ void showQrCustomizationDialog({
   ];
 
   final List<String> availableStyles = [
+    'classic',
     'dots',
     'squares',
     'rounded',
-    'classic'
   ];
-
-  final List<IconData> availableIcons = [
-    Icons.favorite,
-    Icons.star,
-    Icons.home,
-    Icons.music_note,
-    Icons.emoji_emotions,
-  ];
-
-  Color selectedColor = initialColor;
-  String selectedStyle = initialStyle;
-  IconData? selectedIcon = initialIcon;
 
   Widget buildColorSelector() {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: availableColors.length,
-        itemBuilder: (context, index) {
-          final color = availableColors[index];
-          return GestureDetector(
-            onTap: () {
-              selectedColor = color;
-              onCustomize(selectedColor, selectedStyle, selectedIcon);
-              Navigator.of(context).pop();
-              showQrCustomizationDialog(
-                context: context,
-                initialColor: selectedColor,
-                initialStyle: selectedStyle,
-                initialIcon: selectedIcon,
-                onCustomize: onCustomize,
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) {
+        return SizedBox(
+          height: 50,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: availableColors.length,
+            itemBuilder: (context, index) {
+              final color = availableColors[index];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedColor = color;
+                  });
+                  onCustomize(selectedColor, selectedStyle, selectedEmoji);
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selectedColor == color
+                          ? Colors.white
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
               );
             },
-            child: Container(
-              width: 40,
-              height: 40,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: selectedColor == color
-                      ? Colors.white
-                      : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget buildStyleSelector() {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: availableStyles.length,
-        itemBuilder: (context, index) {
-          final style = availableStyles[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: ChoiceChip(
-              label: Text(style),
-              selected: selectedStyle == style,
-              onSelected: (selected) {
-                if (selected) {
-                  selectedStyle = style;
-                  onCustomize(selectedColor, selectedStyle, selectedIcon);
-                  Navigator.of(context).pop();
-                  showQrCustomizationDialog(
-                    context: context,
-                    initialColor: selectedColor,
-                    initialStyle: selectedStyle,
-                    initialIcon: selectedIcon,
-                    onCustomize: onCustomize,
-                  );
-                }
-              },
-            ),
-          );
-        },
-      ),
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) {
+        return SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: availableStyles.map((style) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Radio<String>(
+                      value: style,
+                      groupValue: selectedStyle,
+                      onChanged: (String? value) {
+                        if (value != null) {
+                          setState(() {
+                            selectedStyle = value;
+                          });
+                          onCustomize(
+                              selectedColor, selectedStyle, selectedEmoji);
+                        }
+                      },
+                    ),
+                    Text(style),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
-  Widget buildIconSelector() {
-    return SizedBox(
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: availableIcons.length,
-        itemBuilder: (context, index) {
-          final icon = availableIcons[index];
-          return GestureDetector(
-            onTap: () {
-              selectedIcon = icon;
-              onCustomize(selectedColor, selectedStyle, selectedIcon);
-              Navigator.of(context).pop();
-              showQrCustomizationDialog(
+  Widget buildEmojiSelector() {
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) {
+        return ElevatedButton(
+          child: Text(selectedEmoji ?? 'Select Emoji'),
+          onPressed: () {
+            if (Platform.isIOS) {
+              showCupertinoModalPopup(
                 context: context,
-                initialColor: selectedColor,
-                initialStyle: selectedStyle,
-                initialIcon: selectedIcon,
-                onCustomize: onCustomize,
+                builder: (BuildContext context) {
+                  return SizedBox(
+                    height: 300,
+                    child: CupertinoTextField(
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (String value) {
+                        if (value.isNotEmpty) {
+                          setState(() {
+                            selectedEmoji = value;
+                          });
+                          onCustomize(
+                              selectedColor, selectedStyle, selectedEmoji);
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
+                  );
+                },
               );
-            },
-            child: Container(
-              width: 50,
-              height: 50,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: selectedIcon == icon
-                    ? Colors.grey[300]
-                    : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 30),
-            ),
-          );
-        },
-      ),
+            } else {
+              showModalBottomSheet(
+                context: context,
+                builder: (BuildContext context) {
+                  return SizedBox(
+                    height: 250,
+                    child: EmojiPicker(
+                      onEmojiSelected: (category, emoji) {
+                        setState(() {
+                          selectedEmoji = emoji.emoji;
+                        });
+                        onCustomize(
+                            selectedColor, selectedStyle, selectedEmoji);
+                        Navigator.pop(context);
+                      },
+                      config: const Config(
+                        height: 256,
+                        emojiViewConfig: EmojiViewConfig(
+                          emojiSizeMax: 32.0,
+                        ),
+                        swapCategoryAndBottomBar: false,
+                        skinToneConfig: SkinToneConfig(),
+                        categoryViewConfig: CategoryViewConfig(
+                          initCategory: Category.SMILEYS,
+                        ),
+                        bottomActionBarConfig: BottomActionBarConfig(),
+                        searchViewConfig: SearchViewConfig(),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+          },
+        );
+      },
     );
   }
 
@@ -175,17 +200,17 @@ void showQrCustomizationDialog({
         buildStyleSelector(),
         const SizedBox(height: 16),
         const Text(
-          'Select Icon:',
+          'Select Emoji:',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        buildIconSelector(),
+        buildEmojiSelector(),
       ],
     ),
   );
 
   if (Theme.of(context).platform == TargetPlatform.iOS) {
-    showCupertinoDialog(
+    return showCupertinoDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
@@ -201,13 +226,14 @@ void showQrCustomizationDialog({
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () {
-                Navigator.of(context).pop();
+                onCustomize(initialColor, initialStyle, initialEmoji);
+                Navigator.of(context).pop(false);
               },
             ),
             CupertinoDialogAction(
               child: const Text('Done'),
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true);
               },
             ),
           ],
@@ -215,32 +241,46 @@ void showQrCustomizationDialog({
       },
     );
   } else {
-    showDialog(
+    return showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text(
-            'Customize QR Code',
-            style: TextStyle(fontSize: 24),
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Customize QR Code',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                content,
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onPressed: () {
+                        onCustomize(initialColor, initialStyle, initialEmoji);
+                        Navigator.of(context).pop(false);
+                      },
+                    ),
+                    TextButton(
+                      child: const Text('Done'),
+                      onPressed: () {
+                        Navigator.of(context).pop(true);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          content: SingleChildScrollView(child: content),
-          actions: [
-            TextButton(
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.red),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Done'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
         );
       },
     );

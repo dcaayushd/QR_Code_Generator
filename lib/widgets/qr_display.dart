@@ -5,7 +5,7 @@ class QrDisplay extends StatelessWidget {
   final String data;
   final Size size;
   final Color color;
-  final IconData? icon;
+  final String? emoji;
   final String style;
 
   const QrDisplay({
@@ -13,7 +13,7 @@ class QrDisplay extends StatelessWidget {
     required this.data,
     this.size = const Size(250, 250),
     required this.color,
-    this.icon,
+    this.emoji,
     required this.style,
   });
 
@@ -28,22 +28,27 @@ class QrDisplay extends StatelessWidget {
           size: size.width,
           backgroundColor: Colors.white,
           eyeStyle: QrEyeStyle(
-            eyeShape: style == 'rounded' ? QrEyeShape.square : QrEyeShape.circle,
+            eyeShape:
+                style == 'rounded' ? QrEyeShape.square : QrEyeShape.circle,
             color: color,
           ),
           dataModuleStyle: QrDataModuleStyle(
-            dataModuleShape: style == 'dots' ? QrDataModuleShape.circle : QrDataModuleShape.square,
+            dataModuleShape: style == 'dots'
+                ? QrDataModuleShape.circle
+                : QrDataModuleShape.square,
             color: color,
           ),
           embeddedImageStyle: QrEmbeddedImageStyle(
             size: Size(size.width * 0.2, size.width * 0.2),
           ),
         ),
-        if (icon != null)
-          Icon(
-            icon,
-            size: size.width * 0.2,
-            color: color,
+        if (emoji != null)
+          Text(
+            emoji!,
+            style: TextStyle(
+              fontSize: size.width * 0.2,
+              color: color,
+            ),
           ),
       ],
     );

@@ -20,26 +20,38 @@ class WifiQrScreenState extends State<WifiQrScreen> {
   String? _qrData;
   final GlobalKey _qrKey = GlobalKey();
 
-  Color _qrColor = Colors.purple; 
-  String _qrStyle = 'dots'; 
-  IconData? _selectedIcon;
-
-
+  Color _qrColor = Colors.black;
+  String _qrStyle = 'classic';
+  String? _selectedEmoji;
 
   void _customizeQrCode() {
+    Color tempColor = _qrColor;
+    String tempStyle = _qrStyle;
+    String? tempEmoji = _selectedEmoji;
+
     showQrCustomizationDialog(
       context: context,
       initialColor: _qrColor,
       initialStyle: _qrStyle,
-      initialIcon: _selectedIcon,
-      onCustomize: (Color color, String style, IconData? icon) {
-        setState(() {
-          _qrColor = color;
-          _qrStyle = style;
-          _selectedIcon = icon;
-        });
+      initialEmoji: _selectedEmoji,
+      onCustomize: (
+        Color color,
+        String style,
+        String? emoji,
+      ) {
+        tempColor = color;
+        tempStyle = style;
+        tempEmoji = emoji;
       },
-    );
+    ).then((value) {
+      if (value == true) {
+        setState(() {
+          _qrColor = tempColor;
+          _qrStyle = tempStyle;
+          _selectedEmoji = tempEmoji;
+        });
+      }
+    });
   }
 
   void _showErrorSnackBar(String message) {
@@ -204,7 +216,6 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                           style: TextStyle(fontSize: 16)),
                     ),
                     const SizedBox(height: 20),
-            
                     if (_qrData != null) ...[
                       Stack(
                         alignment: Alignment.topRight,
@@ -215,7 +226,8 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                               data: _qrData!,
                               size: const Size(300, 300),
                               color: _qrColor,
-                              icon: _selectedIcon,
+                              // icon: _selectedIcon,
+                              emoji: _selectedEmoji,
                               style: _qrStyle,
                             ),
                           ),

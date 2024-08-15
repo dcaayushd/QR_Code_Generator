@@ -7,6 +7,7 @@ environment:
   sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
+  emoji_picker_flutter: ^2.2.0
   flutter:
     sdk: flutter
   google_mlkit_barcode_scanning: ^0.12.0
