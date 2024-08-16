@@ -28,13 +28,13 @@ class QrDisplay extends StatelessWidget {
           size: size.width,
           backgroundColor: Colors.white,
           eyeStyle: QrEyeStyle(
-            eyeShape: style == 'classic' || style == 'emboss'
+            eyeShape: style == 'Classic' || style == 'Emboss'
                 ? QrEyeShape.square
                 : QrEyeShape.circle,
             color: color,
           ),
           dataModuleStyle: QrDataModuleStyle(
-            dataModuleShape: style == 'dots' || style == 'emboss'
+            dataModuleShape: style == 'Dots' || style == 'Emboss'
                 ? QrDataModuleShape.circle
                 : QrDataModuleShape.square,
             color: color,
