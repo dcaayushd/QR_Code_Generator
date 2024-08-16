@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:qr_code_generator/screens/widgets/qr_customization_dialog.dart';
+import 'package:provider/provider.dart';
+
+import '../provider/emoji_provider.dart';
+import '../screens/widgets/curve_clippers.dart';
+import '../screens/widgets/qr_customization_dialog.dart';
 import '../utils/qr_generator.dart';
 import '../utils/qr_utils.dart';
+import '../widgets/action_button.dart';
 import '../widgets/custom_snackbar.dart';
 import '../widgets/qr_display.dart';
-import '../widgets/action_button.dart';
-import '../screens/widgets/curve_clippers.dart';
 
 class WifiQrScreen extends StatefulWidget {
   const WifiQrScreen({super.key});
@@ -21,34 +24,54 @@ class WifiQrScreenState extends State<WifiQrScreen> {
   final GlobalKey _qrKey = GlobalKey();
 
   Color _qrColor = Colors.black;
-  String _qrStyle = 'classic';
+  String _qrStyle = 'Classic';
   String? _selectedEmoji;
 
-  void _customizeQrCode() {
-    Color tempColor = _qrColor;
-    String tempStyle = _qrStyle;
-    String? tempEmoji = _selectedEmoji;
+  late Color _initialQrColor;
+  late String _initialQrStyle;
+  String? _initialSelectedEmoji;
 
+  List<Map<String, String>> get recentEmojis =>
+      Provider.of<EmojiProvider>(context, listen: false).recentEmojis;
+
+  @override
+  void initState() {
+    super.initState();
+    _qrColor = _initialQrColor = Colors.black;
+    _qrStyle = _initialQrStyle = 'Classic';
+    _selectedEmoji = _initialSelectedEmoji = null;
+  }
+
+  void _customizeQrCode() {
     showQrCustomizationDialog(
       context: context,
       initialColor: _qrColor,
       initialStyle: _qrStyle,
       initialEmoji: _selectedEmoji,
-      onCustomize: (
-        Color color,
-        String style,
-        String? emoji,
-      ) {
-        tempColor = color;
-        tempStyle = style;
-        tempEmoji = emoji;
+      recentEmojis: recentEmojis,
+      onCustomize: (Color color, String style, String? emoji) {
+        setState(() {
+          _qrColor = color;
+          _qrStyle = style;
+          _selectedEmoji = emoji;
+        });
+      },
+      onSave: (Color color, String style, String? emoji,
+          List<Map<String, String>> updatedRecentEmojis) {
+        setState(() {
+          _qrColor = color;
+          _qrStyle = style;
+          _selectedEmoji = emoji;
+        });
+        Provider.of<EmojiProvider>(context, listen: false)
+            .updateRecentEmojis(updatedRecentEmojis);
       },
     ).then((value) {
-      if (value == true) {
+      if (value == false) {
         setState(() {
-          _qrColor = tempColor;
-          _qrStyle = tempStyle;
-          _selectedEmoji = tempEmoji;
+          _qrColor = _initialQrColor;
+          _qrStyle = _initialQrStyle;
+          _selectedEmoji = _initialSelectedEmoji;
         });
       }
     });
@@ -226,7 +249,7 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                               data: _qrData!,
                               size: const Size(300, 300),
                               color: _qrColor,
-                              // icon: _selectedIcon,
+
                               emoji: _selectedEmoji,
                               style: _qrStyle,
                             ),
