@@ -57,14 +57,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
-  emoji_picker_flutter:
+  cupertino_icons:
     dependency: "direct main"
     description:
-      name: emoji_picker_flutter
-      sha256: "839200a2bd1af9a65d71133a5a246dbf5b24f7e4f6f4c5390130c2e0ed5f85af"
+      name: cupertino_icons
+      sha256: ba631d1c7f7bef6b729a622b7b752645a2d076dba9976925b8f25725a30e1ee6
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "1.0.8"
+  emojis:
+    dependency: "direct main"
+    description:
+      name: emojis
+      sha256: "2e4d847c3f1e2670f30dc355909ce6fa7808b4e626c34a4dd503a360995a38bf"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.9.9"
   fake_async:
     dependency: transitive
     description:
@@ -457,13 +465,13 @@ packages:
     source: hosted
     version: "3.4.0"
   shared_preferences:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: shared_preferences
-      sha256: c272f9cabca5a81adc9b0894381e9c1def363e980f960fa903c604c471b22f68
+      sha256: "746e5369a43170c25816cc472ee016d3a66bc13fcf430c0bc41ad7b4b2922051"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   shared_preferences_android:
     dependency: transitive
     description:
