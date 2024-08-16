@@ -1,37 +1,51 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:qr_code_generator/screens/data/emoji_data.dart';
+
+import '../../provider/emoji_provider.dart';
 
 Future<bool?> showQrCustomizationDialog({
   required BuildContext context,
   required Color initialColor,
   required String initialStyle,
   required String? initialEmoji,
+  required List<Map<String, String>> recentEmojis,
   required Function(Color color, String style, String? emoji) onCustomize,
+  required Function(Color color, String style, String? emoji,
+          List<Map<String, String>> updatedRecentEmojis)
+      onSave,
 }) {
   Color selectedColor = initialColor;
   String selectedStyle = initialStyle;
   String? selectedEmoji = initialEmoji;
 
+  // Store previous values
+  Color previousColor = initialColor;
+  String previousStyle = initialStyle;
+  String? previousEmoji = initialEmoji;
+
   final List<Color> availableColors = [
     Colors.black,
-    Colors.purple,
+    Colors.amber,
     Colors.blue,
-    Colors.red,
+    Colors.brown,
+    Colors.cyan,
     Colors.green,
+    Colors.grey,
+    Colors.indigo,
     Colors.orange,
     Colors.pink,
+    Colors.purple,
+    Colors.red,
     Colors.teal,
-    Colors.indigo,
   ];
 
   final List<String> availableStyles = [
-    'classic',
-    'dots',
-    'squares',
-    'rounded',
+    'Classic',
+    'Dots',
+    'Stripe',
+    'Emboss',
   ];
 
   Widget buildColorSelector() {
@@ -90,11 +104,13 @@ Future<bool?> showQrCustomizationDialog({
                     Radio<String>(
                       value: style,
                       groupValue: selectedStyle,
+                      activeColor: selectedColor,
                       onChanged: (String? value) {
                         if (value != null) {
                           setState(() {
                             selectedStyle = value;
                           });
+
                           onCustomize(
                               selectedColor, selectedStyle, selectedEmoji);
                         }
@@ -114,66 +130,217 @@ Future<bool?> showQrCustomizationDialog({
   Widget buildEmojiSelector() {
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setState) {
-        return ElevatedButton(
-          child: Text(selectedEmoji ?? 'Select Emoji'),
-          onPressed: () {
-            if (Platform.isIOS) {
-              showCupertinoModalPopup(
-                context: context,
-                builder: (BuildContext context) {
-                  return SizedBox(
-                    height: 300,
-                    child: CupertinoTextField(
-                      keyboardType: TextInputType.text,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (String value) {
-                        if (value.isNotEmpty) {
-                          setState(() {
-                            selectedEmoji = value;
-                          });
-                          onCustomize(
-                              selectedColor, selectedStyle, selectedEmoji);
-                          Navigator.pop(context);
-                        }
+        List<Map<String, String>> allEmojis = EmojiData.getEmojis();
+        List<Map<String, String>> filteredEmojis = allEmojis;
+        TextEditingController searchController = TextEditingController();
+        PageController pageController = PageController(initialPage: 1);
+        int currentPage = 1; // 0 for Recent, 1 for All
+
+        Future<void> selectEmoji(
+            String? emoji, StateSetter setModalState) async {
+          if (emoji != null) {
+            Provider.of<EmojiProvider>(context, listen: false)
+                .addRecentEmoji(emoji);
+            setState(() {
+              selectedEmoji = emoji;
+            });
+            onCustomize(selectedColor, selectedStyle, selectedEmoji);
+          }
+        }
+
+        return GestureDetector(
+          onTap: () async {
+            final String? result = await showModalBottomSheet<String>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (BuildContext context) {
+                return StatefulBuilder(
+                  builder: (BuildContext context, StateSetter setModalState) {
+                    return DraggableScrollableSheet(
+                      initialChildSize: 0.5,
+                      minChildSize: 0.2,
+                      maxChildSize: 0.75,
+                      builder: (_, controller) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: CupertinoColors.systemBackground
+                                .resolveFrom(context),
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(20)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                child: Center(
+                                  child: Container(
+                                    width: 40,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: CupertinoColors.separator
+                                          .resolveFrom(context),
+                                      borderRadius: BorderRadius.circular(2.5),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                child: CupertinoSearchTextField(
+                                  controller: searchController,
+                                  placeholder: 'Search',
+                                  onChanged: (String value) {
+                                    setModalState(() {
+                                      filteredEmojis = allEmojis
+                                          .where((emojiMap) =>
+                                              emojiMap["emoji"]!
+                                                  .contains(value) ||
+                                              emojiMap["description"]!
+                                                  .toLowerCase()
+                                                  .contains(
+                                                      value.toLowerCase()))
+                                          .toList();
+                                    });
+                                  },
+                                  suffixMode: OverlayVisibilityMode.editing,
+                                ),
+                              ),
+                              Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: currentPage == 0
+                                            ? CupertinoColors.activeBlue
+                                            : CupertinoColors.inactiveGray,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: currentPage == 1
+                                            ? CupertinoColors.activeBlue
+                                            : CupertinoColors.inactiveGray,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left: 16, top: 8, bottom: 8),
+                                child: Text(
+                                  currentPage == 1 ? 'All' : 'Recent',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: PageView(
+                                  controller: pageController,
+                                  onPageChanged: (index) {
+                                    setModalState(() {
+                                      currentPage = index;
+                                    });
+                                  },
+                                  children: [
+                                    // Recent page
+                                    GridView.builder(
+                                      controller: controller,
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 6,
+                                        childAspectRatio: 1,
+                                      ),
+                                      itemCount: recentEmojis.length,
+                                      itemBuilder: (context, index) {
+                                        final emojiMap = recentEmojis[index];
+                                        return GestureDetector(
+                                          onTap: () {
+                                            selectEmoji(emojiMap["emoji"],
+                                                setModalState);
+                                            Navigator.of(context)
+                                                .pop(emojiMap["emoji"]);
+                                          },
+                                          child: Center(
+                                            child: Text(
+                                              emojiMap["emoji"]!,
+                                              style:
+                                                  const TextStyle(fontSize: 30),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    // All page
+                                    GridView.builder(
+                                      controller: controller,
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 6,
+                                        childAspectRatio: 1,
+                                      ),
+                                      itemCount: filteredEmojis.length,
+                                      itemBuilder: (context, index) {
+                                        final emojiMap = filteredEmojis[index];
+                                        return GestureDetector(
+                                          onTap: () {
+                                            selectEmoji(emojiMap["emoji"],
+                                                setModalState);
+                                            Navigator.of(context)
+                                                .pop(emojiMap["emoji"]);
+                                          },
+                                          child: Center(
+                                            child: Text(
+                                              emojiMap["emoji"]!,
+                                              style:
+                                                  const TextStyle(fontSize: 30),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
                       },
-                    ),
-                  );
-                },
-              );
-            } else {
-              showModalBottomSheet(
-                context: context,
-                builder: (BuildContext context) {
-                  return SizedBox(
-                    height: 250,
-                    child: EmojiPicker(
-                      onEmojiSelected: (category, emoji) {
-                        setState(() {
-                          selectedEmoji = emoji.emoji;
-                        });
-                        onCustomize(
-                            selectedColor, selectedStyle, selectedEmoji);
-                        Navigator.pop(context);
-                      },
-                      config: const Config(
-                        height: 256,
-                        emojiViewConfig: EmojiViewConfig(
-                          emojiSizeMax: 32.0,
-                        ),
-                        swapCategoryAndBottomBar: false,
-                        skinToneConfig: SkinToneConfig(),
-                        categoryViewConfig: CategoryViewConfig(
-                          initCategory: Category.SMILEYS,
-                        ),
-                        bottomActionBarConfig: BottomActionBarConfig(),
-                        searchViewConfig: SearchViewConfig(),
-                      ),
-                    ),
-                  );
-                },
-              );
+                    );
+                  },
+                );
+              },
+            );
+
+            if (result != null) {
+              setState(() {
+                selectedEmoji = result;
+              });
+              onCustomize(selectedColor, selectedStyle, selectedEmoji);
             }
           },
+          child: selectedEmoji == null
+              ? const Icon(Icons.insert_emoticon, size: 24)
+              : Text(
+                  selectedEmoji!,
+                  style: const TextStyle(fontSize: 24),
+                ),
         );
       },
     );
@@ -185,26 +352,31 @@ Future<bool?> showQrCustomizationDialog({
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Select QR Code Color:',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        const Center(
+          child: Text(
+            'Select QR Code Color:',
+          ),
         ),
         const SizedBox(height: 8),
         buildColorSelector(),
         const SizedBox(height: 16),
-        const Text(
-          'Select QR Code Style:',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        const Center(
+          child: Text(
+            'Select QR Code Style:',
+          ),
         ),
         const SizedBox(height: 8),
         buildStyleSelector(),
         const SizedBox(height: 16),
-        const Text(
-          'Select Emoji:',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        const Center(
+          child: Text(
+            'Select Emoji:',
+          ),
         ),
         const SizedBox(height: 8),
-        buildEmojiSelector(),
+        Center(
+          child: buildEmojiSelector(),
+        ),
       ],
     ),
   );
@@ -226,13 +398,16 @@ Future<bool?> showQrCustomizationDialog({
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () {
-                onCustomize(initialColor, initialStyle, initialEmoji);
+                onSave(
+                    previousColor, previousStyle, previousEmoji, recentEmojis);
                 Navigator.of(context).pop(false);
               },
             ),
             CupertinoDialogAction(
               child: const Text('Done'),
               onPressed: () {
+                onSave(
+                    selectedColor, selectedStyle, selectedEmoji, recentEmojis);
                 Navigator.of(context).pop(true);
               },
             ),
@@ -266,13 +441,16 @@ Future<bool?> showQrCustomizationDialog({
                         style: TextStyle(color: Colors.red),
                       ),
                       onPressed: () {
-                        onCustomize(initialColor, initialStyle, initialEmoji);
+                        onSave(previousColor, previousStyle, previousEmoji,
+                            recentEmojis);
                         Navigator.of(context).pop(false);
                       },
                     ),
                     TextButton(
                       child: const Text('Done'),
                       onPressed: () {
+                        onSave(selectedColor, selectedStyle, selectedEmoji,
+                            recentEmojis);
                         Navigator.of(context).pop(true);
                       },
                     ),
