@@ -27,22 +27,21 @@ class WifiQrScreenState extends State<WifiQrScreen> {
   String _qrStyle = 'Classic';
   String? _selectedEmoji;
 
-  late Color _initialQrColor;
-  late String _initialQrStyle;
-  String? _initialSelectedEmoji;
 
   List<Map<String, String>> get recentEmojis =>
       Provider.of<EmojiProvider>(context, listen: false).recentEmojis;
+  Color _tempQrColor = Colors.black;
+  String _tempQrStyle = 'Classic';
+  String? _tempSelectedEmoji;
 
-  @override
-  void initState() {
-    super.initState();
-    _qrColor = _initialQrColor = Colors.black;
-    _qrStyle = _initialQrStyle = 'Classic';
-    _selectedEmoji = _initialSelectedEmoji = null;
-  }
+
 
   void _customizeQrCode() {
+    // Initialize temporary variables with current saved values
+    _tempQrColor = _qrColor;
+    _tempQrStyle = _qrStyle;
+    _tempSelectedEmoji = _selectedEmoji;
+
     showQrCustomizationDialog(
       context: context,
       initialColor: _qrColor,
@@ -51,27 +50,33 @@ class WifiQrScreenState extends State<WifiQrScreen> {
       recentEmojis: recentEmojis,
       onCustomize: (Color color, String style, String? emoji) {
         setState(() {
-          _qrColor = color;
-          _qrStyle = style;
-          _selectedEmoji = emoji;
+          _tempQrColor = color;
+          _tempQrStyle = style;
+          _tempSelectedEmoji = emoji;
         });
       },
       onSave: (Color color, String style, String? emoji,
           List<Map<String, String>> updatedRecentEmojis) {
         setState(() {
+          // Save changes permanently
           _qrColor = color;
           _qrStyle = style;
           _selectedEmoji = emoji;
+          // Update temporary variables to match saved state
+          _tempQrColor = color;
+          _tempQrStyle = style;
+          _tempSelectedEmoji = emoji;
         });
         Provider.of<EmojiProvider>(context, listen: false)
             .updateRecentEmojis(updatedRecentEmojis);
       },
     ).then((value) {
       if (value == false) {
+        // If canceled, revert temporary variables to the last saved state
         setState(() {
-          _qrColor = _initialQrColor;
-          _qrStyle = _initialQrStyle;
-          _selectedEmoji = _initialSelectedEmoji;
+          _tempQrColor = _qrColor;
+          _tempQrStyle = _qrStyle;
+          _tempSelectedEmoji = _selectedEmoji;
         });
       }
     });
@@ -243,15 +248,15 @@ class WifiQrScreenState extends State<WifiQrScreen> {
                       Stack(
                         alignment: Alignment.topRight,
                         children: [
+            
                           RepaintBoundary(
                             key: _qrKey,
                             child: QrDisplay(
                               data: _qrData!,
                               size: const Size(300, 300),
-                              color: _qrColor,
-
-                              emoji: _selectedEmoji,
-                              style: _qrStyle,
+                              color: _tempQrColor,
+                              emoji: _tempSelectedEmoji,
+                              style: _tempQrStyle,
                             ),
                           ),
                           Positioned(

@@ -20,10 +20,6 @@ Future<bool?> showQrCustomizationDialog({
   String selectedStyle = initialStyle;
   String? selectedEmoji = initialEmoji;
 
-  // Store previous values
-  Color previousColor = initialColor;
-  String previousStyle = initialStyle;
-  String? previousEmoji = initialEmoji;
 
   final List<Color> availableColors = [
     Colors.black,
@@ -398,8 +394,6 @@ Future<bool?> showQrCustomizationDialog({
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () {
-                onSave(
-                    previousColor, previousStyle, previousEmoji, recentEmojis);
                 Navigator.of(context).pop(false);
               },
             ),
@@ -441,8 +435,6 @@ Future<bool?> showQrCustomizationDialog({
                         style: TextStyle(color: Colors.red),
                       ),
                       onPressed: () {
-                        onSave(previousColor, previousStyle, previousEmoji,
-                            recentEmojis);
                         Navigator.of(context).pop(false);
                       },
                     ),
