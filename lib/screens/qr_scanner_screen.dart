@@ -173,7 +173,7 @@ class QrScannerScreenState extends State<QrScannerScreen> {
 
   void _processQRCode(String? qrCode) {
     if (qrCode != null && qrCode.isNotEmpty) {
-      if (qrCode.startsWith('http') || qrCode.startsWith('https')) {
+      if (qrCode.startsWith('http') || qrCode.startsWith('https') || qrCode.endsWith('.com')) {
         _handleUrlQrCode(qrCode);
       } else if (qrCode.startsWith('WIFI:')) {
         _handleWifiQrCode(qrCode);
