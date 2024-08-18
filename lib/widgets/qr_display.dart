@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'emoji_background_painter.dart'; 
 
 class QrDisplay extends StatelessWidget {
   final String data;
@@ -48,46 +49,4 @@ class QrDisplay extends StatelessWidget {
       ],
     );
   }
-}
-
-class EmojiBackgroundPainter extends CustomPainter {
-  final String emoji;
-  final Color color;
-
-  EmojiBackgroundPainter(this.emoji, this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: emoji,
-        style:
-            TextStyle(fontSize: size.width / 6, color: color.withOpacity(0.4)),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-
-    final emojiSize = textPainter.size;
-    final positions = [
-      Offset(size.width * 0.2, size.height * 0.2),
-      Offset(size.width * 0.5, size.height * 0.2),
-      Offset(size.width * 0.8, size.height * 0.2),
-      Offset(size.width * 0.1, size.height * 0.5),
-      Offset(size.width * 0.5, size.height * 0.5),
-      Offset(size.width * 0.9, size.height * 0.5),
-      Offset(size.width * 0.2, size.height * 0.8),
-      Offset(size.width * 0.5, size.height * 0.8),
-      Offset(size.width * 0.8, size.height * 0.8),
-      Offset(size.width * 0.35, size.height * 0.35),
-    ];
-
-    for (final position in positions) {
-      textPainter.paint(
-          canvas, position - Offset(emojiSize.width / 2, emojiSize.height / 2));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
