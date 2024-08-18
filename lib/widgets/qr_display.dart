@@ -22,11 +22,16 @@ class QrDisplay extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
+        if (emoji != null)
+          CustomPaint(
+            size: size,
+            painter: EmojiBackgroundPainter(emoji!, color),
+          ),
         QrImageView(
           data: data,
           version: QrVersions.auto,
           size: size.width,
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           eyeStyle: QrEyeStyle(
             eyeShape: style == 'Classic' || style == 'Emboss'
                 ? QrEyeShape.square
@@ -39,19 +44,50 @@ class QrDisplay extends StatelessWidget {
                 : QrDataModuleShape.square,
             color: color,
           ),
-          embeddedImageStyle: QrEmbeddedImageStyle(
-            size: Size(size.width * 0.2, size.width * 0.2),
-          ),
         ),
-        if (emoji != null)
-          Text(
-            emoji!,
-            style: TextStyle(
-              fontSize: size.width * 0.2,
-              color: color,
-            ),
-          ),
       ],
     );
   }
+}
+
+class EmojiBackgroundPainter extends CustomPainter {
+  final String emoji;
+  final Color color;
+
+  EmojiBackgroundPainter(this.emoji, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: emoji,
+        style:
+            TextStyle(fontSize: size.width / 6, color: color.withOpacity(0.4)),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+
+    final emojiSize = textPainter.size;
+    final positions = [
+      Offset(size.width * 0.2, size.height * 0.2),
+      Offset(size.width * 0.5, size.height * 0.2),
+      Offset(size.width * 0.8, size.height * 0.2),
+      Offset(size.width * 0.1, size.height * 0.5),
+      Offset(size.width * 0.5, size.height * 0.5),
+      Offset(size.width * 0.9, size.height * 0.5),
+      Offset(size.width * 0.2, size.height * 0.8),
+      Offset(size.width * 0.5, size.height * 0.8),
+      Offset(size.width * 0.8, size.height * 0.8),
+      Offset(size.width * 0.35, size.height * 0.35),
+    ];
+
+    for (final position in positions) {
+      textPainter.paint(
+          canvas, position - Offset(emojiSize.width / 2, emojiSize.height / 2));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
